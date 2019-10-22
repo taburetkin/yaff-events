@@ -262,10 +262,6 @@ export function prepareApiArguments(context) {
     throw new Error('wrong prepare arguments type ' + type);
   }
 
-  if (!methodArgs.length) {
-    return type == 'remove' ? context.default : undefined;
-  }
-
   let options = {
     takeEmiter: (type == 'add' || type == 'remove') && isObj(listener),
     ...context
