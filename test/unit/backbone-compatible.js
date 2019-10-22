@@ -1,7 +1,7 @@
 import { Instance, debounce, delay } from '../tests-helpers';
 
-import { getStats } from '../../EventsHandler';
-import { setInterop } from '../../';
+import { getStats, EventsHandler } from '../../EventsHandler';
+import { setInterop, Events } from '../../';
 
 /**
  *  This set of tests borrowed and adopted to mocha from the backbone library
@@ -181,7 +181,7 @@ describe('listenTo and stopListening', function() {
       expect(counter, 'third case').to.be.equal(3);
     });
 
-    it('listenToOnce', function() {
+    it('listenToOnce*', function() {
       listener.listenToOnce(emiter, 'event1', increment);
       emiter.trigger('event1');
       emiter.trigger('event1');
@@ -197,6 +197,36 @@ describe('listenTo and stopListening', function() {
       emiter.trigger('one');
       emiter.trigger('two');
       expect(counter).to.be.equal(5);
+    });
+
+    it('listenToOnce', function() {
+      let obj = {
+        counterA: 0,
+        counterB: 0,
+        ...Events
+      };
+
+      let incrA = function() {
+        obj.counterA += 1;
+        obj.trigger('event');
+      };
+      let incrB = function() {
+        obj.counterB += 1;
+      };
+
+      obj.listenToOnce(obj, 'event', incrA);
+      obj.listenToOnce(obj, 'event', incrB);
+      obj.trigger('event');
+
+      expect(
+        obj.counterA,
+        'counterA should have only been incremented once.'
+      ).to.be.equal(1);
+
+      expect(
+        obj.counterB,
+        'counterB should have only been incremented once.'
+      ).to.be.equal(1);
     });
 
     it('listenToOnce and stopListening', function() {
@@ -335,9 +365,9 @@ describe('listenTo and stopListening', function() {
       eStats = events.getStats(emiter);
       lStats = events.getStats(listener);
 
-      expect(eStats.eventsCount).to.be.equal(0);
-      expect(eStats.listenersCount).to.be.equal(0);
-      expect(lStats.emitersCount).to.be.equal(0);
+      expect(eStats.eventsCount, 'second').to.be.equal(0);
+      expect(eStats.listenersCount, 'second').to.be.equal(0);
+      expect(lStats.emitersCount, 'second').to.be.equal(0);
 
       listener.listenTo(emiter, 'foo', increment);
       emiter.off(null, increment);
@@ -345,18 +375,18 @@ describe('listenTo and stopListening', function() {
       eStats = events.getStats(emiter);
       lStats = events.getStats(listener);
 
-      expect(eStats.eventsCount).to.be.equal(0);
-      expect(eStats.listenersCount).to.be.equal(0);
-      expect(lStats.emitersCount).to.be.equal(0);
+      expect(eStats.eventsCount, 'third').to.be.equal(0);
+      expect(eStats.listenersCount, 'third').to.be.equal(0);
+      expect(lStats.emitersCount, 'third').to.be.equal(0);
 
       listener.listenTo(emiter, 'foo', increment);
       emiter.off(null, null, listener);
       eStats = events.getStats(emiter);
       lStats = events.getStats(listener);
 
-      expect(eStats.eventsCount).to.be.equal(0);
-      expect(eStats.listenersCount).to.be.equal(0);
-      expect(lStats.emitersCount).to.be.equal(0);
+      expect(eStats.eventsCount, 'fourth').to.be.equal(0);
+      expect(eStats.listenersCount, 'fourth').to.be.equal(0);
+      expect(lStats.emitersCount, 'fourth').to.be.equal(0);
     });
 
     it('listenTo and stopListening cleaning up references', function() {
@@ -523,11 +553,15 @@ describe('listenTo and stopListening', function() {
       emiter.on('test').trigger('test');
     });
 
-    it('if callback is truthy but not a function, `on` should throw an error just like jQuery', function() {
-      expect(emiter.on.bind(emiter, 'test', 'schmest')).to.throw();
+    it('if callback is truthy but not a function, `trigger` should throw an error just like jQuery', function() {
+      let view = { ...Events };
+      view.on('test', 'shmest');
+      //view.trigger('test');
+      expect(view.trigger.bind(view, 'test')).to.throw();
     });
 
     it('remove all events for a specific context', function() {
+      /*
       let context = {};
       let wrongIncrement = () => {
         increment();
@@ -539,6 +573,28 @@ describe('listenTo and stopListening', function() {
       emiter.trigger('x y');
       expect(counter).to.be.equal(4);
       expect(counter2).to.be.equal(0);
+      */
+      let failed = false;
+      let obj = { ...Events };
+      obj.on('x y all', function() {
+        increment();
+      });
+      obj.on(
+        'x y all',
+        function() {
+          failed = true;
+        },
+        obj
+      );
+
+      // let ob = EventsHandler.get(obj);
+      // let ex = ob.getEventContext('x');
+      // console.log(ex.getCallbacksArray());
+
+      obj.off(null, null, obj);
+      obj.trigger('x y');
+      expect(failed).to.be.false;
+      expect(counter).to.be.equal(4);
     });
 
     it('remove all events for a specific callback', function() {
@@ -747,9 +803,27 @@ describe('listenTo and stopListening', function() {
       other = Object.assign({}, otherMixin);
     });
     it('#3611 - listenTo is compatible with non-Backbone event libraries', function() {
-      emiter.listenTo(other, 'test', increment);
+      // emiter.listenTo(other, 'test', increment);
+      // other.trigger('test');
+      // expect(counter).to.be.equal(1);
+
+      var obj = { ...Events };
+      var other = {
+        events: {},
+        on: function(name, callback) {
+          this.events[name] = callback;
+        },
+        trigger: function(name) {
+          this.events[name]();
+        }
+      };
+      let success = false;
+      obj.listenTo(other, 'test', function() {
+        //assert.ok(true);
+        success = true;
+      });
       other.trigger('test');
-      expect(counter).to.be.equal(1);
+      expect(success).to.be.true;
     });
     it('#3611 - stopListening is compatible with non-Backbone event libraries', function() {
       emiter.listenTo(other, 'test', increment);

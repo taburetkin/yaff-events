@@ -1,4 +1,10 @@
-import { groupBy, isYaffEvents, eventNameToMethodName } from './utils';
+import {
+  groupBy,
+  isYaffEvents,
+  eventNameToMethodName,
+  isFunc,
+  isObj
+} from './utils';
 import { createEventCallbackContextPredicate } from './CallbackContext';
 import { EventContext } from './EventContext';
 import { getFromStore } from './store';
@@ -148,10 +154,14 @@ export class EventsHandler {
       return;
     }
     for (let context of contexts) {
-      if (context.callback && typeof context.callback != 'function') {
-        // backbone test: if callback is truthy but not a function, `on` should throw an error just like jQuery
-        throw new Error('callback must be a function');
+      if (!isFunc(context.callback) && isObj(context.listener)) {
+        continue;
       }
+      // if (context.callback && typeof context.callback != 'function') {
+      //   // backbone test: if callback is truthy but not a function, `on` should throw an error just like jQuery
+      //   throw new Error('callback must be a function');
+      // }
+
       let handler = EventsHandler.get(context.emiter);
       handler.add(context);
     }

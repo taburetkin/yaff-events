@@ -270,7 +270,7 @@ export function prepareApiArguments(context) {
   return prepareTypes[type].extractArgs(methodArgs, options);
 }
 
-export const eventsMixinSymbol = Symbol('YaffEvents');
+export const eventsMixinSymbol = '_yaffevents';
 
 /**
  * Checks if argument supports Yaff events
@@ -280,7 +280,7 @@ export const eventsMixinSymbol = Symbol('YaffEvents');
  * @returns {boolean}
  */
 export function isYaffEvents(inst) {
-  return inst && eventsMixinSymbol in inst;
+  return isObj(inst) && inst[eventsMixinSymbol] === true;
 }
 
 // split the event name on the ":"

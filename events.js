@@ -1,13 +1,12 @@
 import { prepareApiArguments, eventsMixinSymbol } from './utils';
 import { EventsHandler as privateApi } from './EventsHandler';
-
+let gcounter = 0;
 /**
  * Events mixin. Just mix it into your prorotypes
  * @mixin Events
  */
 const Events = {
   [eventsMixinSymbol]: true,
-
   /**
    * Registers event(s) with given callback
    * @example <caption>single event with default context</caption>

@@ -1,6 +1,6 @@
 {
 	"name": "yaff-events",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"main": "index.js",
 	"author": "dimtabu <dima.taburetkin@gmail.com>",
 	"license": "MIT",

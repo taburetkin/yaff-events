@@ -1,4 +1,4 @@
-import { newid, isYaffEvents, isFunc } from './utils';
+import { newid, isYaffEvents, isFunc, isObj } from './utils';
 import { getInterop } from './store';
 
 /**
@@ -10,17 +10,16 @@ import { getInterop } from './store';
 export class CallbackContext {
   constructor(eventName, options, onDestroy) {
     let { emiter, listener, callback, context, defaultContext, once } = options;
-
     this.eventName = eventName;
     this.id = newid('evcbcntx');
     this.emiter = emiter;
     this.listener = listener;
     this.callback = callback;
-    this.context = context || defaultContext;
+    this.context = context || listener;
+    this.defaultContext = defaultContext;
     this.once = once === true;
     this._onDestroy = onDestroy;
-
-    if (!isYaffEvents(emiter)) {
+    if (isObj(emiter) && !isYaffEvents(emiter)) {
       this._initializeInterop();
     }
   }
@@ -36,8 +35,7 @@ export class CallbackContext {
     let eventName = this.eventName;
     let callback = this._interopTrigger.bind(this);
     let interop = getInterop(emiter);
-    this.interop = { ...interop };
-    this.interop.callback = callback;
+    this.interop = { ...interop, callback };
     this.interop.on(emiter, this.listener, eventName, callback);
   }
 
@@ -60,12 +58,17 @@ export class CallbackContext {
    * @memberof CallbackContext
    */
   trigger(args) {
-    if (typeof this.callback != 'function' || this.calledOnce) return;
+    if (this.calledOnce) return;
     if (this.once) {
       this.calledOnce = true;
       this.destroy();
     }
-    this.callback.apply(this.context, args);
+    if (this.callback) {
+      if (!isFunc(this.callback)) {
+        throw new Error(this.eventName + ' callback is not a function');
+      }
+      this.callback.apply(this.context || this.defaultContext, args);
+    }
   }
 
   /**

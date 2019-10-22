@@ -40,7 +40,6 @@ export class EventContext {
 
     let callbacks = this.getCallbacksArray();
     let allCallbacks = allContext ? allContext.getCallbacksArray() : [];
-
     for (let callback of callbacks) {
       callback.trigger(args);
     }
