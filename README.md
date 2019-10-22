@@ -37,7 +37,7 @@ instance.trigger('event');
 // once more
 ```
 
-## `Events` mixin
+## Events mixin
 
 | Method          | Description                                                                          |
 | --------------- | ------------------------------------------------------------------------------------ |
@@ -51,7 +51,7 @@ instance.trigger('event');
 | `triggerMethod` | Triggers registered event's callbacks and invokes emitter's event associated methods |
 | `getOnMethod`   | Returns event associated method if any. Feel free to override to provide own logic   |
 
-## `setInterop` method
+## setInterop method
 
 Use this method for defining interop behavior.
 Also there is a default one which tries to use emitter's `on` and `off`

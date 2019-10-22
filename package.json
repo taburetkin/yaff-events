@@ -4,6 +4,7 @@
 	"main": "index.js",
 	"author": "dimtabu <dima.taburetkin@gmail.com>",
 	"license": "MIT",
+  "description": "Simple modern javascript events engine",
 	"scripts": {
 		"docs": "node tooling/jsdocs",
 		"build": "yarn build-es5 && yarn build-esm",
