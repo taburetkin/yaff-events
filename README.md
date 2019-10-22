@@ -54,5 +54,5 @@ instance.trigger('event');
 ## setInterop method
 
 Use this method for defining interop behavior.
-Also there is a default one which tries to use emitter's `on` and `off`
-for more details check [reference](reference.md)
+Also there is a default one which tries to use emitter's `on` and `off`.  
+For more details check [reference](reference.md)
