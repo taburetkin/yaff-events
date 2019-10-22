@@ -1,0 +1,12 @@
+{
+	"presets": [
+		"@babel/env"
+	],
+	"plugins": [
+		"@babel/plugin-transform-runtime",
+    "istanbul"
+	],
+	"sourceMaps": "inline",
+	"retainLines": true,
+  "comments": false
+}
