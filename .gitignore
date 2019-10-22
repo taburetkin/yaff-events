@@ -2,4 +2,5 @@
 .nyc_output/
 .vscode/
 node_modules/
+sandbox/
 yarn.lock
