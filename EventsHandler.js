@@ -173,7 +173,6 @@ export class EventsHandler {
     }
     let result;
     for (let context of contexts) {
-      console.log(' -> triggering', context);
       let { eventName, emiter, triggerArgs } = context;
 
       if (shouldTriggerMethod) {
