@@ -1,4 +1,4 @@
-# yaff/events v1.0.0
+# yaff-events v1.0.0
 
 Simple es6 events engine with interop support.  
 Does not mutate objects.  
@@ -9,7 +9,7 @@ Inspired by `backbone.js` and also backbone compatible.
 with npm
 
 ```javascript
-npm -i yaff-events
+npm i yaff-events
 ```
 
 with yarn

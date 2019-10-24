@@ -1,10 +1,11 @@
 {
 	"name": "yaff-events",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"main": "index.js",
 	"author": "dimtabu <dima.taburetkin@gmail.com>",
 	"license": "MIT",
   "description": "Simple modern javascript events engine",
+  "keywords": ["frontend","front-end","front-end-app","event","events","event-driven","event-management","javascript"],
 	"scripts": {
 		"docs": "node tooling/jsdocs",
 		"build": "yarn build-es5 && yarn build-esm",
