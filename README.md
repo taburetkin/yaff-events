@@ -1,4 +1,4 @@
-# yaff-events v1.0.0
+# yaff-events
 
 Simple es6 events engine with interop support.  
 Does not mutate objects.  
