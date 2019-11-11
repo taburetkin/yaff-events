@@ -1,7 +1,8 @@
-import { Instance, debounce, delay } from '../tests-helpers';
+import { Instance, debounce, delay, getStats } from '../tests-helpers';
+import { setInterop } from '../../interop';
+import { Events } from '../../';
+import { handler } from '../../EventsHandler';
 
-import { getStats, EventsHandler } from '../../EventsHandler';
-import { setInterop, Events } from '../../';
 
 /**
  *  This set of tests borrowed and adopted to mocha from the backbone library
@@ -16,14 +17,14 @@ let counter2 = 0;
 let listener;
 let increment = () => counter++;
 let increment2 = () => counter2++;
-beforeEach(function() {
+beforeEach(function () {
   emiter = new Instance();
   counter = 0;
   counter2 = 0;
 });
 
-describe('on and trigger', function() {
-  it('event handler should be called n times', function() {
+describe('on and trigger', function () {
+  it('event handler should be called n times', function () {
     emiter.on('event', increment);
     emiter.trigger('event');
     expect(counter).to.be.equal(1);
@@ -34,24 +35,24 @@ describe('on and trigger', function() {
     expect(counter).to.be.equal(5);
   });
 
-  it('binding and triggering multiple events by string literal', function() {
+  it('binding and triggering multiple events by string literal', function () {
     emiter.on('a b c', increment);
     emiter.trigger('a');
-    expect(counter).to.be.equal(1);
+    expect(counter, 'first').to.be.equal(1);
 
     emiter.trigger('a b');
-    expect(counter).to.be.equal(3);
+    expect(counter, 'second').to.be.equal(3);
 
     emiter.trigger('c');
-    expect(counter).to.be.equal(4);
+    expect(counter, 'third').to.be.equal(4);
 
     emiter.off('a c');
 
     emiter.trigger('a b c');
-    expect(counter).to.be.equal(5);
+    expect(counter, 'fourth').to.be.equal(5);
   });
 
-  it('binding and triggering events by event maps', function() {
+  it('binding and triggering events by event maps', function () {
     emiter.on({
       a: increment,
       b: increment,
@@ -76,7 +77,7 @@ describe('on and trigger', function() {
     expect(counter).to.be.equal(6);
   });
 
-  it('binding and triggering multiple events by event maps', function() {
+  it('binding and triggering multiple events by event maps', function () {
     emiter.on({
       'a b c': increment
     });
@@ -95,15 +96,15 @@ describe('on and trigger', function() {
     expect(counter).to.be.equal(4);
   });
 
-  it('binding and trigger with event maps context', function() {
+  it('binding and trigger with event maps context', function () {
     const context = { v: 1 };
     const context2 = { v: 2 };
-    const incIfSame = function() {
+    const incIfSame = function () {
+      //console.log('~', this);
       this == context && increment();
     };
 
     emiter.on({ a: incIfSame }, context);
-
     emiter.trigger('a');
     expect(counter, 'just a').to.be.equal(1);
 
@@ -121,27 +122,28 @@ describe('on and trigger', function() {
   });
 });
 
-describe('listenTo and stopListening', function() {
-  beforeEach(function() {
+describe('listenTo and stopListening', function () {
+  beforeEach(function () {
     listener = new Instance();
   });
 
-  describe('listening for all events', function() {
-    beforeEach(function() {
+  describe('listening for all events', function () {
+    beforeEach(function () {
       listener.listenTo(emiter, 'all', increment);
     });
-    it('should be triggered by any event', function() {
+    it('should be triggered by any event', function () {
       emiter.trigger('some:event');
       expect(counter).to.be.equal(1);
     });
-    it('should not be triggered if stopListening called', function() {
+    it('should not be triggered if stopListening called', function () {
       listener.stopListening();
+      //console.log(handler(listener).listenTos.array[0]);
       emiter.trigger('another:event');
       expect(counter).to.be.equal(0);
     });
   });
-  describe('[danger zone]', function() {
-    it('listenTo and stopListening with event maps', function() {
+  describe('[danger zone]', function () {
+    it('listenTo and stopListening with event maps', function () {
       listener.listenTo(emiter, {
         event1: increment
       });
@@ -152,18 +154,23 @@ describe('listenTo and stopListening', function() {
         event2: increment
       });
       emiter.on('event2', increment);
+      //emiter.DEBUG = true;
+
       emiter.trigger('something event1 event2');
       expect(counter).to.be.equal(4);
 
       listener.stopListening();
+      // console.log('wtf??', handler(listener).listenTos.getSize());
+      // console.log('wtf??', handler(emiter).events.array);
       emiter.trigger('event2');
-      expect(counter).to.be.equal(5);
+      expect(counter, 'last').to.be.equal(5);
     });
 
-    it('stopListening with omitted args', function() {
+    it('stopListening with omitted args', function () {
       listener.listenTo(emiter, 'event', increment);
       emiter.on('event', increment);
       listener.listenTo(emiter, 'event2', increment);
+
       listener.stopListening(null, { event: increment });
 
       emiter.trigger('event event2');
@@ -181,14 +188,18 @@ describe('listenTo and stopListening', function() {
       expect(counter, 'third case').to.be.equal(3);
     });
 
-    it('listenToOnce*', function() {
+    it('listenToOnce*', function () {
       listener.listenToOnce(emiter, 'event1', increment);
       emiter.trigger('event1');
       emiter.trigger('event1');
       expect(counter).to.be.equal(1);
 
-      listener.listenToOnce(emiter, 'event1', increment);
-      listener.listenTo(emiter, 'event1', increment);
+      listener.listenToOnce(emiter, 'event1', () => {
+        increment();
+      });
+      listener.listenTo(emiter, 'event1', () => {
+        increment();
+      });
       emiter.trigger('event1');
       emiter.trigger('event1');
       expect(counter).to.be.equal(4);
@@ -199,18 +210,18 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(5);
     });
 
-    it('listenToOnce', function() {
+    it('listenToOnce', function () {
       let obj = {
         counterA: 0,
         counterB: 0,
         ...Events
       };
 
-      let incrA = function() {
+      let incrA = function () {
         obj.counterA += 1;
         obj.trigger('event');
       };
-      let incrB = function() {
+      let incrB = function () {
         obj.counterB += 1;
       };
 
@@ -229,7 +240,7 @@ describe('listenTo and stopListening', function() {
       ).to.be.equal(1);
     });
 
-    it('listenToOnce and stopListening', function() {
+    it('listenToOnce and stopListening', function () {
       listener.listenToOnce(emiter, 'all', increment);
       emiter.trigger('some');
       emiter.trigger('event');
@@ -248,7 +259,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('listenTo and stopListening with event maps', function() {
+    it('listenTo and stopListening with event maps', function () {
       listener.listenTo(emiter, { change: increment });
       emiter.trigger('change');
       expect(counter).to.be.equal(1);
@@ -260,22 +271,25 @@ describe('listenTo and stopListening', function() {
 
       listener.listenTo(emiter, { change: increment, inc: increment });
       emiter.trigger('change inc'); // +2
+      //console.log('>>', counter);
       listener.stopListening(emiter, { change: increment });
       emiter.trigger('change inc'); // +1
       expect(counter).to.be.equal(4);
 
       listener.stopListening(emiter, 'inc another');
       emiter.trigger('change inc'); // +0
+
+
       expect(counter).to.be.equal(4);
     });
 
-    it('listenTo yourself', function() {
+    it('listenTo yourself', function () {
       emiter.listenTo(emiter, 'foo', increment);
       emiter.trigger('foo');
       expect(counter).to.be.equal(1);
     });
 
-    it('listenTo yourself cleans yourself up with stopListening', function() {
+    it('listenTo yourself cleans yourself up with stopListening', function () {
       emiter.listenTo(emiter, 'foo', increment);
       emiter.trigger('foo');
       emiter.stopListening();
@@ -283,20 +297,20 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('stopListening cleans up references', function() {
+    it('stopListening cleans up references', function () {
       listener.listenTo(emiter, 'foo', increment);
       emiter.on('foo', increment);
       emiter.off();
 
       let eStats = getStats(emiter);
       let lStats = getStats(listener);
-
-      expect(eStats.eventsCount).to.be.equal(0);
-      expect(eStats.emitersCount).to.be.equal(0);
-      expect(eStats.listenersCount).to.be.equal(0);
-      expect(lStats.eventsCount).to.be.equal(0);
-      expect(lStats.emitersCount).to.be.equal(0);
-      expect(lStats.listenersCount).to.be.equal(0);
+      //console.log(lStats);
+      expect(eStats.eventsCount, 'e events').to.be.equal(0);
+      expect(eStats.emitersCount, 'e emitters').to.be.equal(0);
+      expect(eStats.listenersCount, 'e listeners').to.be.equal(0);
+      expect(lStats.eventsCount, 'l events').to.be.equal(0);
+      expect(lStats.emitersCount, 'l emitters').to.be.equal(0);
+      expect(lStats.listenersCount, 'l listeners').to.be.equal(0);
 
       listener.listenTo(emiter, 'foo', increment);
       listener.on('foo', increment);
@@ -305,6 +319,8 @@ describe('listenTo and stopListening', function() {
 
       eStats = getStats(emiter);
       lStats = getStats(listener);
+
+      //return;
 
       expect(counter).to.be.equal(1);
 
@@ -315,12 +331,15 @@ describe('listenTo and stopListening', function() {
       expect(lStats.emitersCount).to.be.equal(0);
       expect(lStats.listenersCount).to.be.equal(0);
     });
-    it('stopListening cleans up references from listenToOnce', function() {
+    it('stopListening cleans up references from listenToOnce', function () {
+      let eStats;
+      let lStats;
+
       listener.listenToOnce(emiter, 'foo', increment);
       emiter.once('foo', increment);
       emiter.off();
-      let eStats = events.getStats(emiter);
-      let lStats = events.getStats(listener);
+      eStats = events.getStats(emiter);
+      lStats = events.getStats(listener);
 
       expect(eStats.eventsCount).to.be.equal(0);
       expect(eStats.emitersCount).to.be.equal(0);
@@ -331,13 +350,15 @@ describe('listenTo and stopListening', function() {
 
       listener.listenToOnce(emiter, 'foo', increment);
       listener.once('foo', increment);
+
       listener.stopListening();
       listener.trigger('foo');
+
       lStats = events.getStats(listener);
       eStats = events.getStats(emiter);
 
-      expect(counter).to.be.equal(1);
 
+      expect(counter, 'counter').to.be.equal(1);
       expect(eStats.eventsCount).to.be.equal(0);
       expect(eStats.emitersCount).to.be.equal(0);
       expect(eStats.listenersCount).to.be.equal(0);
@@ -345,7 +366,7 @@ describe('listenTo and stopListening', function() {
       expect(lStats.emitersCount).to.be.equal(0);
       expect(lStats.listenersCount).to.be.equal(0);
     });
-    it('listenTo and off cleaning up references', function() {
+    it('listenTo and off cleaning up references', function () {
       let eStats;
       let lStats;
 
@@ -359,8 +380,10 @@ describe('listenTo and stopListening', function() {
       expect(eStats.listenersCount).to.be.equal(0);
       expect(lStats.emitersCount).to.be.equal(0);
 
+
       listener.listenTo(emiter, 'foo', increment);
       emiter.off('foo');
+
 
       eStats = events.getStats(emiter);
       lStats = events.getStats(listener);
@@ -369,15 +392,19 @@ describe('listenTo and stopListening', function() {
       expect(eStats.listenersCount, 'second').to.be.equal(0);
       expect(lStats.emitersCount, 'second').to.be.equal(0);
 
+
       listener.listenTo(emiter, 'foo', increment);
       emiter.off(null, increment);
 
       eStats = events.getStats(emiter);
       lStats = events.getStats(listener);
 
+
       expect(eStats.eventsCount, 'third').to.be.equal(0);
       expect(eStats.listenersCount, 'third').to.be.equal(0);
       expect(lStats.emitersCount, 'third').to.be.equal(0);
+
+
 
       listener.listenTo(emiter, 'foo', increment);
       emiter.off(null, null, listener);
@@ -387,9 +414,10 @@ describe('listenTo and stopListening', function() {
       expect(eStats.eventsCount, 'fourth').to.be.equal(0);
       expect(eStats.listenersCount, 'fourth').to.be.equal(0);
       expect(lStats.emitersCount, 'fourth').to.be.equal(0);
+
     });
 
-    it('listenTo and stopListening cleaning up references', function() {
+    it('listenTo and stopListening cleaning up references', function () {
       listener.listenTo(emiter, 'all', increment);
       emiter.trigger('anything');
       listener.listenTo(emiter, 'other', increment);
@@ -400,15 +428,15 @@ describe('listenTo and stopListening', function() {
       expect(lStats.emitersCount).to.be.equal(0);
     });
 
-    it('listenToOnce without context cleans up references after the event has fired', function() {
+    it('listenToOnce without context cleans up references after the event has fired', function () {
       listener.listenToOnce(emiter, 'all', increment);
       emiter.trigger('anything');
       let lStats = events.getStats(listener);
-      expect(counter).to.be.equal(1);
-      expect(lStats.emitersCount).to.be.equal(0);
+      expect(counter, 'counter').to.be.equal(1);
+      expect(lStats.emitersCount, 'in stats').to.be.equal(0);
     });
 
-    it('listenToOnce with event maps cleans up references', function() {
+    it('listenToOnce with event maps cleans up references', function () {
       listener.listenToOnce(emiter, {
         one: increment,
         two: increment
@@ -419,7 +447,7 @@ describe('listenTo and stopListening', function() {
       expect(lStats.emitersCount).to.be.equal(1);
     });
 
-    it('listenToOnce with event maps binds the correct `this`', function() {
+    it('listenToOnce with event maps binds the correct `this`', function () {
       listener.listenToOnce(emiter, {
         one() {
           this == listener && increment();
@@ -429,22 +457,22 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it("listenTo with empty callback doesn't throw an error", function() {
+    it("listenTo with empty callback doesn't throw an error", function () {
       listener.listenTo(emiter, 'all', null);
       emiter.trigger('anything');
     });
 
-    it('trigger all for each event', function() {
+    it('trigger all for each event', function () {
       let spy = sinon.spy();
       listener.listenTo(emiter, 'all', spy);
       emiter.trigger('a b c');
       expect(spy.callCount).to.be.equal(3);
-      expect(spy.getCall(0).args[0]).to.be.equal('a');
+      expect(spy.getCall(0).args[0], 'a').to.be.equal('a');
       expect(spy.getCall(1).args[0]).to.be.equal('b');
       expect(spy.getCall(2).args[0]).to.be.equal('c');
     });
 
-    it('on, then unbind all functions', function() {
+    it('on, then unbind all functions', function () {
       emiter.on('event', increment);
       emiter.trigger('event');
       emiter.off('event');
@@ -452,7 +480,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('bind two callbacks, unbind only one', function() {
+    it('bind two callbacks, unbind only one', function () {
       emiter.on('event', increment);
       emiter.on('event', increment2);
       emiter.trigger('event');
@@ -462,7 +490,7 @@ describe('listenTo and stopListening', function() {
       expect(counter2).to.be.equal(2);
     });
 
-    it('unbind a callback in the midst of it firing', function() {
+    it('unbind a callback in the midst of it firing', function () {
       let callback = () => {
         increment();
         emiter.off();
@@ -474,7 +502,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('two binds that unbind themeselves', function() {
+    it('two binds that unbind themeselves', function () {
       let callbackA = () => {
         increment();
         emiter.off('event', callbackA);
@@ -494,8 +522,8 @@ describe('listenTo and stopListening', function() {
       expect(counter2).to.be.equal(1);
     });
 
-    it('bind a callback with a default context when none supplied', function() {
-      let callback = function() {
+    it('bind a callback with a default context when none supplied', function () {
+      let callback = function () {
         this == emiter && increment();
       };
       emiter.once('event', callback);
@@ -503,8 +531,8 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('bind a callback with a supplied context', function() {
-      let callback = function() {
+    it('bind a callback with a supplied context', function () {
+      let callback = function () {
         this == listener && increment();
       };
       emiter.once('event', callback, listener);
@@ -512,7 +540,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('nested trigger with unbind', function() {
+    it('nested trigger with unbind', function () {
       let increment3 = () => {
         increment();
         emiter.off('event', increment3);
@@ -523,7 +551,7 @@ describe('listenTo and stopListening', function() {
       emiter.trigger('event');
     });
 
-    it('callback list is not altered during trigger', function() {
+    it('callback list is not altered during trigger', function () {
       let switchOn = () => emiter.on('event all', increment);
       let switchOff = () => emiter.off('event all', increment);
 
@@ -539,7 +567,7 @@ describe('listenTo and stopListening', function() {
       expect(counter, 'off does not alter callback list').to.be.equal(2);
     });
 
-    it("#1282 - 'all' callback list is retrieved after each event.", function() {
+    it("#1282 - 'all' callback list is retrieved after each event.", function () {
       emiter.on('x', () => {
         emiter.on('y', increment).on('all', increment);
       });
@@ -549,39 +577,28 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(2);
     });
 
-    it('if no callback is provided, `on` is a noop', function() {
+    it('if no callback is provided, `on` is a noop', function () {
       emiter.on('test').trigger('test');
     });
 
-    it('if callback is truthy but not a function, `trigger` should throw an error just like jQuery', function() {
+    it('if callback is truthy but not a function, `trigger` should throw an error just like jQuery', function () {
       let view = { ...Events };
       view.on('test', 'shmest');
+      //console.log(view);
       //view.trigger('test');
       expect(view.trigger.bind(view, 'test')).to.throw();
     });
 
-    it('remove all events for a specific context', function() {
-      /*
-      let context = {};
-      let wrongIncrement = () => {
-        increment();
-        increment2();
-      };
-      emiter.on('x y all', increment);
-      emiter.on('x y all', wrongIncrement, context);
-      emiter.off('x y all', null, context);
-      emiter.trigger('x y');
-      expect(counter).to.be.equal(4);
-      expect(counter2).to.be.equal(0);
-      */
+    it('remove all events for a specific context', function () {
+
       let failed = false;
       let obj = { ...Events };
-      obj.on('x y all', function() {
+      obj.on('x y all', function () {
         increment();
       });
       obj.on(
         'x y all',
-        function() {
+        function () {
           failed = true;
         },
         obj
@@ -597,7 +614,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(4);
     });
 
-    it('remove all events for a specific callback', function() {
+    it('remove all events for a specific callback', function () {
       let wrongIncrement = () => {
         increment();
         increment2();
@@ -606,20 +623,22 @@ describe('listenTo and stopListening', function() {
       emiter.on('x y all', wrongIncrement);
       emiter.off('x y all', wrongIncrement);
       emiter.trigger('x y');
+      //console.log(emiter);
       expect(counter).to.be.equal(4);
       expect(counter2).to.be.equal(0);
     });
 
-    it('#1310 - off does not skip consecutive events', function() {
+    it('#1310 - off does not skip consecutive events', function () {
       emiter.on('event', increment, emiter);
       emiter.on('event', increment, emiter);
       emiter.off(null, null, emiter);
+      //console.log(emiter);
       emiter.trigger('event');
       expect(counter).to.be.equal(0);
     });
   });
-  describe('once', function() {
-    it('once', function() {
+  describe('once', function () {
+    it('once', function () {
       emiter.on('event', increment);
       emiter.on('event', increment2);
       emiter.trigger('event');
@@ -627,7 +646,7 @@ describe('listenTo and stopListening', function() {
         .to.be.equal(1)
         .and.be.equal(counter2);
     });
-    it('once variant one', function() {
+    it('once variant one', function () {
       emiter.once('event', increment);
       listener.on('event', increment);
       emiter.trigger('event');
@@ -637,7 +656,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(3);
     });
 
-    it('once variant two', function() {
+    it('once variant two', function () {
       emiter
         .once('event', increment)
         .on('event', increment)
@@ -647,14 +666,14 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(3);
     });
 
-    it('once with off', function() {
+    it('once with off', function () {
       emiter.once('event', increment);
       emiter.off('event', increment);
       emiter.trigger('event');
       expect(counter).to.be.equal(0);
     });
 
-    it('once with event maps', function() {
+    it('once with event maps', function () {
       emiter.once(
         {
           a: increment,
@@ -663,28 +682,29 @@ describe('listenTo and stopListening', function() {
         },
         emiter
       );
+      //console.log(emiter);
       emiter.trigger('a');
-      expect(counter).to.be.equal(1);
+      expect(counter, 'first').to.be.equal(1);
 
       emiter.trigger('a b');
-      expect(counter).to.be.equal(2);
+      expect(counter, 'second').to.be.equal(2);
 
       emiter.trigger('c');
-      expect(counter).to.be.equal(3);
+      expect(counter, 'third').to.be.equal(3);
 
       emiter.trigger('a b c');
-      expect(counter).to.be.equal(3);
+      expect(counter, 'fourth').to.be.equal(3);
     });
-    it('bind a callback with a supplied context using once with emiterect notation', function() {
+    it('bind a callback with a supplied context using once with emiterect notation', function () {
       let context = {};
-      let callback = function() {
+      let callback = function () {
         this == context && increment();
       };
       emiter.once('event', callback, context);
       emiter.trigger('event');
       expect(counter).to.be.equal(1);
     });
-    it('once with off only by context', function() {
+    it('once with off only by context', function () {
       let context = {};
       let context2 = {};
       emiter.once('event', increment, context);
@@ -694,7 +714,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('once with asynchronous events', async function() {
+    it('once with asynchronous events', async function () {
       let callback = debounce(() => {
         increment();
       }, 50);
@@ -705,18 +725,18 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('once with multiple events.', function() {
+    it('once with multiple events.', function () {
       emiter.once('x y', increment);
       emiter.trigger('x y');
       expect(counter).to.be.equal(2);
     });
 
-    it('Off during iteration with once.', function() {
-      let eventOff = function() {
+    it('Off during iteration with once.', function () {
+      let eventOff = function () {
         this.off('event', eventOff);
       };
       emiter.on('event', eventOff);
-      emiter.once('event', () => {});
+      emiter.once('event', () => { });
       emiter.on('event', increment);
 
       emiter.trigger('event');
@@ -724,7 +744,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(2);
     });
 
-    it('`once` with trigger should work as expected', function() {
+    it('`once` with trigger should work as expected', function () {
       emiter.once('event', () => {
         increment();
         emiter.trigger('event');
@@ -733,7 +753,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('`once` on `all` should work as expected', function() {
+    it('`once` on `all` should work as expected', function () {
       emiter.off();
 
       emiter.once('all', () => {
@@ -746,18 +766,18 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(1);
     });
 
-    it('once without a callback is a noop', function() {
+    it('once without a callback is a noop', function () {
       emiter.once('event');
       expect(emiter.trigger.bind(emiter, 'event')).to.not.throw();
     });
 
-    it('listenToOnce without a callback is a noop', function() {
+    it('listenToOnce without a callback is a noop', function () {
       emiter.listenToOnce(emiter, 'event');
       expect(emiter.trigger.bind(emiter, 'event')).to.not.throw();
     });
 
-    it('event functions are chainable', function() {
-      const fn = () => {};
+    it('event functions are chainable', function () {
+      const fn = () => { };
       listener = new Instance();
       expect(emiter, '1').to.be.equal(emiter.trigger('noeventssetyet'));
       expect(emiter, '2').to.be.equal(emiter.off('noeventssetyet'));
@@ -772,7 +792,7 @@ describe('listenTo and stopListening', function() {
       // expect(emiter, '11').to.be.equal(emiter.stopListening());
     });
 
-    it('#3448 - listenToOnce with space-separated events', function() {
+    it('#3448 - listenToOnce with space-separated events', function () {
       listener = new Instance();
       listener.listenToOnce(emiter, 'x y', n => n === counter++);
       emiter.trigger('x', 1);
@@ -782,7 +802,7 @@ describe('listenTo and stopListening', function() {
       expect(counter).to.be.equal(2);
     });
   });
-  describe('listen to foreign instance', function() {
+  describe('listen to foreign instance', function () {
     const otherMixin = {
       on(name, cb) {
         !this.events && (this.events = {});
@@ -799,10 +819,10 @@ describe('listenTo and stopListening', function() {
       }
     };
     let other;
-    beforeEach(function() {
+    beforeEach(function () {
       other = Object.assign({}, otherMixin);
     });
-    it('#3611 - listenTo is compatible with non-Backbone event libraries', function() {
+    it('#3611 - listenTo is compatible with non-Backbone event libraries', function () {
       // emiter.listenTo(other, 'test', increment);
       // other.trigger('test');
       // expect(counter).to.be.equal(1);
@@ -810,34 +830,36 @@ describe('listenTo and stopListening', function() {
       var obj = { ...Events };
       var other = {
         events: {},
-        on: function(name, callback) {
+        on: function (name, callback) {
           this.events[name] = callback;
         },
-        trigger: function(name) {
+        trigger: function (name) {
           this.events[name]();
         }
       };
       let success = false;
-      obj.listenTo(other, 'test', function() {
+      obj.listenTo(other, 'test', function () {
         //assert.ok(true);
         success = true;
       });
+      //console.log(other);
+
       other.trigger('test');
       expect(success).to.be.true;
     });
-    it('#3611 - stopListening is compatible with non-Backbone event libraries', function() {
+    it('#3611 - stopListening is compatible with non-Backbone event libraries', function () {
       emiter.listenTo(other, 'test', increment);
       emiter.stopListening(other);
       other.trigger('test');
       expect(counter).to.be.equal(0);
     });
-    it('listenToOnce on foreign instance should invoke callback only once', function() {
+    it('listenToOnce on foreign instance should invoke callback only once', function () {
       emiter.listenToOnce(other, 'test', increment);
       other.trigger('test');
       other.trigger('test');
       expect(counter).to.be.equal(1);
     });
-    describe('registering interops', function() {
+    describe('registering interops', function () {
       class Custom {
         on(name, cb) {
           increment();
@@ -855,10 +877,10 @@ describe('listenTo and stopListening', function() {
           cb && cb(...args);
         }
       }
-      class DeepCustom extends Custom {}
+      class DeepCustom extends Custom { }
       let interInst1;
       let interInst2;
-      beforeEach(function() {
+      beforeEach(function () {
         interInst1 = new Custom();
         interInst2 = new DeepCustom();
         setInterop(Custom, {
@@ -866,28 +888,29 @@ describe('listenTo and stopListening', function() {
           off: (emiter, listener, event, cb) => emiter.off(event, cb, listener)
         });
       });
-      it('should use registered interop for setting the event', function() {
+      it('should use registered interop for setting the event', function () {
         listener.listenTo(interInst1, 'test', increment);
         expect(counter).to.be.equal(1);
       });
-      it('should use registered interop for removing the event', function() {
+      it('should use registered interop for removing the event', function () {
         listener.listenTo(interInst1, 'test', increment);
         listener.stopListening(interInst1, 'test', increment);
         expect(counter2).to.be.equal(1);
       });
-      it('should use registered interop for derived instance', function() {
+      it('should use registered interop for derived instance', function () {
         listener.listenTo(interInst2, 'test', increment);
         listener.stopListening(interInst2, 'test', increment);
         expect(counter).to.be.equal(1);
         expect(counter2).to.be.equal(1);
       });
-      it('should emit event to listener', function() {
+      it('should emit event to listener', function () {
+
         listener.listenTo(interInst1, 'test', increment);
         interInst1.trigger('test');
         interInst1.trigger('test');
         expect(counter).to.be.equal(3);
       });
-      it('should emit event to listener once', function() {
+      it('should emit event to listener once', function () {
         listener.listenToOnce(interInst2, 'test', increment);
         interInst2.trigger('test');
         interInst2.trigger('test');

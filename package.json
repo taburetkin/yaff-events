@@ -1,16 +1,26 @@
 {
 	"name": "yaff-events",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"main": "index.js",
 	"author": "dimtabu <dima.taburetkin@gmail.com>",
 	"license": "MIT",
-  "description": "Simple modern javascript events engine",
-  "keywords": ["frontend","front-end","front-end-app","event","events","event-driven","event-management","javascript"],
+	"description": "Simple modern javascript events engine",
+	"keywords": [
+		"frontend",
+		"front-end",
+		"front-end-app",
+		"event",
+		"events",
+		"event-driven",
+		"event-management",
+		"javascript"
+	],
 	"scripts": {
 		"docs": "node tooling/jsdocs",
 		"build": "yarn build-es5 && yarn build-esm",
 		"build-es5": "rollup --config tooling/rollup.config.es5.js",
 		"build-esm": "rollup --config tooling/rollup.config.esm.js",
+		"build-umd": "rollup --config tooling/rollup.config.umd.js",
 		"test": "mocha --config ./test/.mocharc.raw.json",
 		"test-w": "mocha -w --config ./test/.mocharc.raw.json",
 		"test-es5": "yarn build-es5 && mocha --config ./test/.mocharc.es5.json",
@@ -28,6 +38,7 @@
 		"babel-plugin-external-helpers": "^6.22.0",
 		"babel-plugin-istanbul": "^5.2.0",
 		"babel-plugin-transform-regenerator": "^6.26.0",
+		"backbone": "^1.4.0",
 		"better-docs": "^1.3.3",
 		"chai": "^4.2.0",
 		"chai-as-promised": "^7.1.1",
@@ -44,6 +55,7 @@
 		"rollup-plugin-commonjs": "^10.1.0",
 		"rollup-plugin-node-resolve": "^5.2.0",
 		"sinon": "^7.4.2",
-		"sinon-chai": "^3.3.0"
+		"sinon-chai": "^3.3.0",
+		"underscore": "^1.9.1"
 	}
 }

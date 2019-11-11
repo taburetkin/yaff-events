@@ -1,7 +1,7 @@
 /**
  * Registering interop helpers
  */
-export { setInterop } from './store';
+export { setInterop } from './interop';
 /**
  * Events mixin. mix it into your prototypes
  */

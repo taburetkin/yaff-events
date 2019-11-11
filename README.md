@@ -1,7 +1,6 @@
 # yaff-events
 
 Simple es6 events engine with interop support.  
-Does not mutate objects.  
 Inspired by `backbone.js` and also backbone compatible.
 
 ## Install
@@ -20,7 +19,8 @@ yarn add yaff-events
 
 ## Reference
 
-For complete reference [go here](reference.md)
+The API is actually the same as in Backbone.  
+Anyway, the details are here -> [reference](reference.md)
 
 ## Named exports
 
@@ -31,9 +31,11 @@ For complete reference [go here](reference.md)
 
 ```javascript
 import { Events } from 'yaff-events';
-class MyClass {
-  ...Events
-}
+
+class MyClass {}
+Object.assign(MyClass.prototype, Events);
+
+
 const instance = new MyClass();
 const another = new MyClass();
 
