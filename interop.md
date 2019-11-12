@@ -5,7 +5,8 @@ Lets see how to do that.
 ## DOM
 1. Let's create our listener
 ```javascript
-const listener = { ...yaffEvents.Events };
+import { Events } from 'yaff-events';
+const listener = { ...Events };
 ```
 
 2. Now its time to define interop rule for DOM events
