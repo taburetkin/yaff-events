@@ -1,7 +1,9 @@
 # yaff-events
 
-Simple es6 events engine with interop support.  
-Inspired by `backbone.js` and also backbone compatible.
+Simple es6 events engine with interop support - DOM, nodejs, backbone and othres.  
+Inspired by `backbone.js` and also backbone compatible.  
+- [interop](interop.md)
+- [preformance](performance.md)
 
 ## Install
 

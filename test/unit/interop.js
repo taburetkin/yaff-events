@@ -210,6 +210,14 @@ describe('interop', () => {
       emitter.emit('b');
       expect(spy2, 'spy #2').to.be.calledTwice;
     });
+    // TODO: think of all handler.
+    // it.only('should handle all', () => {
+    //   listener.listenTo(emitter, 'all', spy);
+    //   emitter.emit('a', 'foo', 'bar');
+    //   expect(spy, 'spy #1').to.be.calledOnce.and.calledWith('foo', 'bar');
+    //   emitter.emit('b', 'alpha', 'bravo');
+    //   expect(spy, 'spy #2').to.be.calledOnce.and.calledWith('alpha', 'bravo');
+    // })
     it('should correctly handle once', function () {
       listener.listenToOnce(emitter, 'a', spy);
       listener.listenTo(emitter, 'b', spy2);
